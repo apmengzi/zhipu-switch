@@ -37,7 +37,11 @@ GreasyFork 页面(待上架后补链):[greasyfork.org](https://greasyfork.org/) 
 
 安装后打开 [chatglm.cn](https://chatglm.cn/) 并登录,右下角出现悬浮窗即生效。
 
-### 使用多账号
+### 浏览器扩展版(无需脚本管理器)
+
+`edge-ext/` 目录提供打包好的 MV3 扩展(功能相同):Edge 用户可在 [Edge 加载项](https://microsoftedge.microsoft.com/addons/Microsoft-Edge-Extensions-Home) 搜索安装(上架后补链);开发者模式下也可"加载解压缩的扩展"直接使用 `edge-ext/` 目录。
+
+## 使用多账号
 
 - 「添加账号」→ 页面进入访客态(有 toast 引导)→ 点页面右上角【登录】登录另一个账号(或注册新号)→ 插件自动把新号入池并切回你之前的号
 - 池里点某号的「切」即可切换登录;点「×」仅删除本地记录,不影响账号本身
