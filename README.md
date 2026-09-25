@@ -17,9 +17,25 @@
 
 ## 安装
 
-1. 浏览器安装 [Tampermonkey](https://www.tampermonkey.net/) 或 ScriptCat 扩展
-2. 新建脚本,粘贴 [`zhipu-switch.user.js`](./zhipu-switch.user.js) 全部内容,保存
-3. 打开 [chatglm.cn](https://chatglm.cn/) 并登录,右下角出现悬浮窗即生效
+> 需要一个用户脚本管理器:**Tampermonkey**(油猴)或 **脚本猫 ScriptCat** 均可——本插件只使用标准页面 API(无任何 GM_* 特权接口),两者完全兼容。
+
+**方式一 · 一键安装(推荐)**
+
+安装好 Tampermonkey / 脚本猫后,直接点这个链接,管理器会自动弹出安装确认页:
+
+👉 [一键安装 zhipu-switch](https://raw.githubusercontent.com/apmengzi/zhipu-switch/main/zhipu-switch.user.js)
+
+以后有新版本,脚本管理器会通过同一链接自动检查更新。
+
+**方式二 · 从 GreasyFork 安装**
+
+GreasyFork 页面(待上架后补链):[greasyfork.org](https://greasyfork.org/) —— 上架后点击"安装此脚本"即可,同样支持自动更新。
+
+**方式三 · 手动安装**
+
+打开脚本管理器面板 → 添加新脚本 → 全选粘贴 [`zhipu-switch.user.js`](./zhipu-switch.user.js) 内容 → 保存(Ctrl+S)。
+
+安装后打开 [chatglm.cn](https://chatglm.cn/) 并登录,右下角出现悬浮窗即生效。
 
 ### 使用多账号
 
