@@ -19,29 +19,35 @@
 
 ## 安装
 
-> 需要一个用户脚本管理器:**Tampermonkey**(油猴)或 **脚本猫 ScriptCat** 均可——本插件只使用标准页面 API(无任何 GM_* 特权接口),两者完全兼容。
+四种方式任选其一(前两种需要用户脚本管理器;后两种不需要):
 
-**方式一 · 一键安装(推荐)**
+**方式一 · 一键安装(推荐,需 Tampermonkey / 脚本猫)**
 
-安装好 Tampermonkey / 脚本猫后,直接点这个链接,管理器会自动弹出安装确认页:
+安装好 Tampermonkey 或 ScriptCat 后,直接点这个链接,管理器会自动弹出安装确认页:
 
 👉 [一键安装 zhipu-switch](https://raw.githubusercontent.com/apmengzi/zhipu-switch/main/zhipu-switch.user.js)
 
 以后有新版本,脚本管理器会通过同一链接自动检查更新。
 
-**方式二 · 从 GreasyFork 安装**
+**方式二 · 脚本猫商店安装**
 
-GreasyFork 页面(待上架后补链):[greasyfork.org](https://greasyfork.org/) —— 上架后点击"安装此脚本"即可,同样支持自动更新。
+👉 [ScriptCat 商店页面](https://scriptcat.org/zh-CN/script-show-page/8138) —— 打开点「安装」即可(用 ScriptCat 扩展)。
 
-**方式三 · 手动安装**
+**方式三 · 浏览器开发者模式加载(不需要任何脚本管理器)**
+
+本仓库 `edge-ext/` 目录提供打包好的 MV3 浏览器扩展(功能与脚本版相同):
+
+1. 下载本仓库 `edge-ext` 目录(含 `manifest.json`、`content.js`、`icons/`)
+2. Edge 地址栏输入 `edge://extensions` → 打开右上角「开发人员模式」→「加载解压缩的扩展」→ 选择 `edge-ext` 目录(Chrome 用 `chrome://extensions` 同理)
+3. 打开 chatglm.cn 即生效
+
+> GreasyFork 页面待账号新号期结束后上架(链接随后补);Edge 官方商店待 Edge 计划注册完成后上架。
+
+**方式四 · 手动粘贴**
 
 打开脚本管理器面板 → 添加新脚本 → 全选粘贴 [`zhipu-switch.user.js`](./zhipu-switch.user.js) 内容 → 保存(Ctrl+S)。
 
 安装后打开 [chatglm.cn](https://chatglm.cn/) 并登录,右下角出现悬浮窗即生效。
-
-### 浏览器扩展版(无需脚本管理器)
-
-`edge-ext/` 目录提供打包好的 MV3 扩展(功能相同):Edge 用户可在 [Edge 加载项](https://microsoftedge.microsoft.com/addons/Microsoft-Edge-Extensions-Home) 搜索安装(上架后补链);开发者模式下也可"加载解压缩的扩展"直接使用 `edge-ext/` 目录。
 
 ## 使用多账号
 

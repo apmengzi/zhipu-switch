@@ -20,29 +20,35 @@ The Double-Festival event pays credits per account, but a browser can only hold 
 
 ## Installation
 
-> Requires a userscript manager: **Tampermonkey** or **ScriptCat** — this script only uses standard page APIs (no GM_* privileged interfaces), fully compatible with both.
+Four ways (the first two need a userscript manager; the last two don't):
 
-**Option 1 · One-click install (recommended)**
+**Option 1 · One-click install (needs Tampermonkey / ScriptCat)**
 
-Install Tampermonkey / ScriptCat, then open this link — the manager pops up an install confirmation automatically:
+Install Tampermonkey or ScriptCat, then open this link — the manager pops up an install confirmation automatically:
 
 👉 [Install zhipu-switch](https://raw.githubusercontent.com/apmengzi/zhipu-switch/main/zhipu-switch.user.js)
 
 Future updates are checked from the same link automatically.
 
-**Option 2 · GreasyFork**
+**Option 2 · ScriptCat store**
 
-GreasyFork page (link to be added after listing): [greasyfork.org](https://greasyfork.org/)
+👉 [ScriptCat listing](https://scriptcat.org/en/script-show-page/8138) — open and click Install (with the ScriptCat extension).
 
-**Option 3 · Manual**
+**Option 3 · Load as an unpacked extension (no userscript manager needed)**
+
+The `edge-ext/` folder in this repo is a packaged MV3 browser extension (same features as the script):
+
+1. Download the `edge-ext` folder (`manifest.json`, `content.js`, `icons/`)
+2. In Edge, open `edge://extensions` → enable **Developer mode** → **Load unpacked** → pick the `edge-ext` folder (Chrome: `chrome://extensions`, same steps)
+3. Open chatglm.cn and you're live
+
+> GreasyFork listing pending (new-account posting restriction); official Edge Add-ons store listing pending program registration.
+
+**Option 4 · Manual paste**
 
 Open the userscript manager dashboard → Create a new script → paste the contents of [`zhipu-switch.user.js`](./zhipu-switch.user.js) → save (Ctrl+S).
 
 Then open [chatglm.cn](https://chatglm.cn/) and log in — the floating panel at the bottom-right means it's live.
-
-### Browser extension build (no userscript manager needed)
-
-The `edge-ext/` folder contains a packaged MV3 extension (same features): Edge users can search it on the [Edge Add-ons store](https://microsoftedge.microsoft.com/addons/Microsoft-Edge-Extensions-Home) once listed, or load `edge-ext/` as an unpacked extension in developer mode.
 
 ## Using multiple accounts
 
