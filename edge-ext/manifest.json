@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "zhipu-switch · 智谱清言多账号积分助手",
-  "version": "0.3.1",
-  "description": "为智谱清言双节活动而做:多账号积分池、一键签到、一键切换账号、一键添加账号、余额悬浮窗",
+  "name": "__MSG_extensionName__",
+  "version": "0.3.2",
+  "description": "__MSG_extensionDescription__",
   "icons": {
     "16": "icons/16.png",
     "48": "icons/48.png",
@@ -19,5 +19,6 @@
       "run_at": "document_start",
       "world": "MAIN"
     }
-  ]
+  ],
+  "default_locale": "en"
 }
