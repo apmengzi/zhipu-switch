@@ -1,8 +1,10 @@
 // ==UserScript==
-// @name         zhipu-switch · 智谱清言多账号积分
+// @name         zhipu-switch · 智谱清言多账号积分助手
 // @namespace    zsw
-// @version      0.2.2
-// @description  chatglm.cn 页面内：自动每日登录赠分（幂等）、余额悬浮窗（可收起为圆图标）、多账号池（token 存 localStorage，勿在共用机器使用）、一键切换账号、一键添加账号（识别访客态，登录真号后自动入池并切回原号）
+// @version      0.3.0
+// @description  智谱清言双节活动多账号助手:余额悬浮窗(可收起圆图标)、多账号池、一键切换/添加账号、自动签到、中英双语 | Zhipu Qingyan multi-account credits assistant (bilingual UI)
+// @author       apmengzi
+// @license      MIT
 // @match        https://chatglm.cn/*
 // @run-at       document-start
 // @grant        none
@@ -108,7 +110,7 @@
     if (Date.now() - flag.at > 10 * 60 * 1000) { localStorage.removeItem(ADDING_KEY); render(); return; }
     const jwt = parseJwtPayload(tok);
     if (jwt && jwt.is_guest) {
-      toast("访客态已就绪：请点页面右上角【登录】按钮登录新账号；放弃请点悬浮窗「取消添加」");
+      toast(t("guestReady"));
       return; // 保留 zsw_adding，等真登录
     }
     if (onNewLoginToken._busy) return;
@@ -127,7 +129,7 @@
         user_id: info._id || "", balance: info.member_info?.left_score ?? null,
         last_result: "", added_at: Date.now(),
       });
-      toast(`新号「${name}」已入池${flag.prev && pool.all()[flag.prev.name] ? "，正在切回 " + flag.prev.name : ""}`);
+      toast(t("added", name, flag.prev && flag.prev.name));
       if (flag.prev && pool.all()[flag.prev.name]) {
         setTimeout(() => switchTo(flag.prev.name), 900);
       } else {
@@ -172,6 +174,59 @@
     remove: (name) => { const p = pool.all(); delete p[name]; pool.save(p); },
   };
 
+  /* ---------- i18n(中/英;悬浮窗标题栏按钮切换,偏好存 zsw_lang,默认跟随浏览器) ---------- */
+  const I18N = {
+    zh: {
+      add: "添加账号", checkin: "全部签到", refresh: "刷余额", export1: "导出",
+      export1Title: "手动导出当前登录态（添加账号会自动做）",
+      exportPool: "导出池文件", exportPoolTitle: "把整个账号池下载为 JSON 文件（可放入 zhipu-relay 的账号目录）",
+      cancelAdd: "取消添加", collapseTitle: "收起为圆图标", langTitle: "切换到 English",
+      loading: "当前登录：加载中…",
+      curBal: (bal, st) => `当前登录：<b>${esc(bal)}分</b> · ${st}`,
+      gotToday: "今日刚领✅", already: "今日已领", noLogin: "未登录/登录态过期",
+      emptyPool: "池为空：点「添加账号」登录新号，自动入池",
+      guestReady: "访客态已就绪：请点页面右上角【登录】按钮登录新账号；放弃请点悬浮窗「取消添加」",
+      added: (n, prev) => `新号「${n}」已入池${prev && pool.all()[prev] ? "，正在切回 " + prev : ""}`,
+      cancelOk: "已取消添加，当前登录态不受影响",
+      poolDownloaded: "账号池已下载；⚠️ JSON 内含明文 token，勿外传",
+      poolEmpty: "zsw: 池为空",
+      noToken: "zsw: 未捕获到登录 token（未登录？）",
+      badToken: (s) => `zsw: token 无效(${s})`,
+      poolName: "存入池的名称：",
+      delConfirm: "从池中删除该账号？（仅删本地记录，不影响账号本身）",
+      guestWarn: (s) => `当前登录态校验失败(${s})。\n继续将丢失当前登录（可稍后从池中切回）。继续？`,
+      langBtn: "EN",
+    },
+    en: {
+      add: "Add account", checkin: "Check in all", refresh: "Refresh", export1: "Export",
+      export1Title: "Export current login state manually (adding does it automatically)",
+      exportPool: "Export pool file", exportPoolTitle: "Download the whole account pool as JSON (for zhipu-relay)",
+      cancelAdd: "Cancel adding", collapseTitle: "Collapse to round icon", langTitle: "切换到中文",
+      loading: "Current login: loading…",
+      curBal: (bal, st) => `Current login: <b>${esc(bal)} pts</b> · ${st}`,
+      gotToday: "Got today ✅", already: "Already claimed", noLogin: "Not logged in / expired",
+      emptyPool: "Pool is empty: click \"Add account\" and log in a new account — it gets pooled automatically",
+      guestReady: "Guest state ready: click the site's Log-in button (top-right) to log in a new account; give up via \"Cancel adding\" in the panel",
+      added: (n, prev) => `New account "${n}" pooled${prev && pool.all()[prev] ? ", switching back to " + prev : ""}`,
+      cancelOk: "Adding cancelled; current login untouched",
+      poolDownloaded: "Pool downloaded; ⚠️ the JSON contains plain-text tokens, do not share it",
+      poolEmpty: "zsw: pool is empty",
+      noToken: "zsw: no login token captured (not logged in?)",
+      badToken: (s) => `zsw: token invalid (${s})`,
+      poolName: "Name for the pool:",
+      delConfirm: "Remove this account from the pool? (local record only; the account itself is unaffected)",
+      guestWarn: (s) => `Current login check failed (${s}).\nContinuing will lose the current login (you can switch back from the pool later). Continue?`,
+      langBtn: "中",
+    },
+  };
+  let LANG = localStorage.getItem("zsw_lang") || (/^zh/i.test(navigator.language || "") ? "zh" : "en");
+  const t = (k, ...a) => {
+    const v = (I18N[LANG] || I18N.zh)[k];
+    const d = I18N.zh[k];
+    if (v === undefined) return typeof d === "function" ? d(...a) : d;
+    return typeof v === "function" ? v(...a) : v;
+  };
+
   /* ---------- 悬浮窗（可收起为圆图标） ---------- */
   let panel, bubble;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -198,13 +253,19 @@
     panel.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:default">
         <b style="color:#7ec3ff">zhipu-switch</b>
-        <span id="zsw-toggle" title="收起为圆图标" style="cursor:pointer;opacity:.7">—</span></div>
+        <span><span id="zsw-lang" title="${t("langTitle")}" style="cursor:pointer;opacity:.7;margin-right:10px">${t("langBtn")}</span>
+        <span id="zsw-toggle" title="${t("collapseTitle")}" style="cursor:pointer;opacity:.7">—</span></span></div>
       <div id="zsw-body"></div>`;
     document.documentElement.appendChild(panel);
     panel.querySelector("#zsw-toggle").onclick = () => {
       localStorage.setItem(COLLAPSED_KEY, "1");
       panel.style.display = "none";
       ensureBubble().style.display = "";
+    };
+    panel.querySelector("#zsw-lang").onclick = () => {
+      LANG = LANG === "zh" ? "en" : "zh";
+      localStorage.setItem("zsw_lang", LANG);
+      location.reload();
     };
     return panel;
   }
@@ -229,15 +290,15 @@
           <span data-del="${esc(a.name)}" style="cursor:pointer;color:#e06c75">×</span></span></div>`;
     }).join("");
     body.innerHTML = `
-      <div id="zsw-main">当前登录：加载中…</div>
+      <div id="zsw-main">${t("loading")}</div>
       <div style="margin:4px 0">
-        <button data-act="add" style="font-size:12px">添加账号</button>
-        ${localStorage.getItem(ADDING_KEY) ? '<button data-act="cancel-add" style="font-size:12px;color:#e5c07b">取消添加</button>' : ""}
-        <button data-act="checkin-all" style="font-size:12px">全部签到</button>
-        <button data-act="refresh-bal" style="font-size:12px">刷余额</button>
-        <button data-act="export" title="手动导出当前登录态（添加账号会自动做）" style="font-size:12px">导出</button>
-        <button data-act="export-file" title="把整个账号池下载为 JSON 文件（可放入 zhipu-relay 的账号目录）" style="font-size:12px">导出池文件</button></div>
-      <div>${rows || '<span style="opacity:.5">池为空：点「添加账号」登录新号，自动入池</span>'}</div>`;
+        <button data-act="add" style="font-size:12px">${t("add")}</button>
+        ${localStorage.getItem(ADDING_KEY) ? `<button data-act="cancel-add" style="font-size:12px;color:#e5c07b">${t("cancelAdd")}</button>` : ""}
+        <button data-act="checkin-all" style="font-size:12px">${t("checkin")}</button>
+        <button data-act="refresh-bal" style="font-size:12px">${t("refresh")}</button>
+        <button data-act="export" title="${t("export1Title")}" style="font-size:12px">${t("export1")}</button>
+        <button data-act="export-file" title="${t("exportPoolTitle")}" style="font-size:12px">${t("exportPool")}</button></div>
+      <div>${rows || `<span style="opacity:.5">${t("emptyPool")}</span>`}</div>`;
   }
   function setResult(name, text) {
     const p = pool.all();
@@ -269,11 +330,11 @@
 
   async function exportCurrent() {
     const acc = await currentAccount();
-    if (!acc) return alert("zsw: 未捕获到登录 token（未登录？）");
+    if (!acc) return alert(t("noToken"));
     const j = await accInfo(acc);
-    if (j.status === 401 || j.status === 403) return alert("zsw: token 无效(" + j.status + ")");
+    if (j.status === 401 || j.status === 403) return alert(t("badToken", j.status));
     const info = j.result || {};
-    const name = prompt("存入池的名称：", autoName(info));
+    const name = prompt(t("poolName"), autoName(info));
     if (!name) return;
     pool.upsert({
       name, access: acc.access, refresh: readCookie("chatglm_refresh_token"),
@@ -313,7 +374,7 @@
           user_id: info._id || "", balance: info.member_info?.left_score ?? null,
           last_result: "", added_at: Date.now(),
         });
-      } else if (!confirm("当前登录态校验失败(" + (j && j.status) + ")。\n继续将丢失当前登录（可稍后从池中切回）。继续？")) return;
+      } else if (!confirm(t("guestWarn", j && j.status))) return;
     }
     // 每个新号配独立设备指纹（登录前写入，页面请求即用新 deid）
     localStorage.setItem("chatglm-deid", crypto.randomUUID().replace(/-/g, ""));
@@ -327,7 +388,7 @@
   /* 导出整个池为 JSON 文件(供 zhipu-relay 等本地工具导入) */
   function exportPoolFile() {
     const p = pool.all();
-    if (!Object.keys(p).length) return alert("zsw: 池为空");
+    if (!Object.keys(p).length) return alert(t("poolEmpty"));
     const blob = new Blob([JSON.stringify(p, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -335,7 +396,7 @@
     a.download = `zsw-pool-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-    toast("账号池已下载；⚠️ JSON 内含明文 token，勿外传");
+    toast(t("poolDownloaded"));
   }
 
   async function checkinOne(acc) {
@@ -375,8 +436,8 @@
     const main = ensurePanel().querySelector("#zsw-main");
     const info = await accInfo(acc).catch(() => null);
     const bal = info && info.status === 0 ? (info.result.member_info?.left_score ?? "?") : "?";
-    const st = j.status === 0 ? "今日刚领✅" : j.status === 10001 ? "今日已领" : j.status === 401 ? "未登录/登录态过期" : "status " + j.status;
-    main.innerHTML = `当前登录：<b>${esc(bal)}分</b> · ${st}`;
+    const st = j.status === 0 ? t("gotToday") : j.status === 10001 ? t("already") : j.status === 401 ? t("noLogin") : "status " + j.status;
+    main.innerHTML = t("curBal", bal, st);
   }
 
   /* ---------- 启动 ---------- */
@@ -388,13 +449,13 @@
       const del = e.target.dataset && e.target.dataset.del;
       const sw = e.target.dataset && e.target.dataset.sw;
       if (act === "add") addAccount();
-      else if (act === "cancel-add") { localStorage.removeItem(ADDING_KEY); toast("已取消添加，当前登录态不受影响"); render(); }
+      else if (act === "cancel-add") { localStorage.removeItem(ADDING_KEY); toast(t("cancelOk")); render(); }
       else if (act === "export-file") exportPoolFile();
       else if (act === "export") exportCurrent();
       else if (act === "checkin-all") checkinAll();
       else if (act === "refresh-bal") refreshBalances();
       else if (sw) switchTo(sw);
-      else if (del) { if (confirm("从池中删除该账号？（仅删本地记录，不影响账号本身）")) { pool.remove(del); render(); } }
+      else if (del) { if (confirm(t("delConfirm"))) { pool.remove(del); render(); } }
     });
     autoDaily();
   };
