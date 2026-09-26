@@ -30,11 +30,15 @@ Install Tampermonkey or ScriptCat, then open this link — the manager pops up a
 
 Future updates are checked from the same link automatically.
 
-**Option 2 · ScriptCat store**
+**Option 2 · GreasyFork**
+
+👉 [GreasyFork listing](https://greasyfork.org/zh-CN/scripts/597547) — click "Install this script"; the listing auto-syncs from this GitHub repo daily.
+
+**Option 3 · ScriptCat store**
 
 👉 [ScriptCat listing](https://scriptcat.org/en/script-show-page/8138) — open and click Install (with the ScriptCat extension).
 
-**Option 3 · Load as an unpacked extension (no userscript manager needed)**
+**Option 4 · Load as an unpacked extension (no userscript manager needed)**
 
 The `edge-ext/` folder in this repo is a packaged MV3 browser extension (same features as the script):
 
@@ -44,7 +48,7 @@ The `edge-ext/` folder in this repo is a packaged MV3 browser extension (same fe
 
 > GreasyFork listing pending (new-account posting restriction); official Edge Add-ons store listing pending program registration.
 
-**Option 4 · Manual paste**
+**Option 5 · Manual paste**
 
 Open the userscript manager dashboard → Create a new script → paste the contents of [`zhipu-switch.user.js`](./zhipu-switch.user.js) → save (Ctrl+S).
 

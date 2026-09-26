@@ -29,11 +29,15 @@
 
 以后有新版本,脚本管理器会通过同一链接自动检查更新。
 
-**方式二 · 脚本猫商店安装**
+**方式二 · GreasyFork 安装**
+
+👉 [GreasyFork 页面](https://greasyfork.org/zh-CN/scripts/597547) —— 打开点「安装此脚本」即可;本站与 GitHub 仓库每日自动同步。
+
+**方式三 · 脚本猫商店安装**
 
 👉 [ScriptCat 商店页面](https://scriptcat.org/zh-CN/script-show-page/8138) —— 打开点「安装」即可(用 ScriptCat 扩展)。
 
-**方式三 · 浏览器开发者模式加载(不需要任何脚本管理器)**
+**方式四 · 浏览器开发者模式加载(不需要任何脚本管理器)**
 
 本仓库 `edge-ext/` 目录提供打包好的 MV3 浏览器扩展(功能与脚本版相同):
 
@@ -41,9 +45,9 @@
 2. Edge 地址栏输入 `edge://extensions` → 打开右上角「开发人员模式」→「加载解压缩的扩展」→ 选择 `edge-ext` 目录(Chrome 用 `chrome://extensions` 同理)
 3. 打开 chatglm.cn 即生效
 
-> GreasyFork 页面待账号新号期结束后上架(链接随后补);Edge 官方商店待 Edge 计划注册完成后上架。
+> Edge 官方商店版本正在审核中,过审后此处补链。
 
-**方式四 · 手动粘贴**
+**方式五 · 手动粘贴**
 
 打开脚本管理器面板 → 添加新脚本 → 全选粘贴 [`zhipu-switch.user.js`](./zhipu-switch.user.js) 内容 → 保存(Ctrl+S)。
 
