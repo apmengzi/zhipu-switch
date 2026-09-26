@@ -3,7 +3,7 @@
 // @name:en      zhipu-switch - Zhipu Qingyan multi-account credits assistant
 // @description:en  Multi-account credits assistant for Zhipu Qingyan (chatglm.cn): balance panel, account pool, one-click account switching & adding, daily bonus check-in. Bilingual UI.
 // @namespace    zsw
-// @version      0.3.3
+// @version      0.3.4
 // @description  智谱清言双节活动多账号助手:余额悬浮窗(可收起圆图标)、多账号池、一键切换/添加账号、自动签到、中英双语 | Zhipu Qingyan multi-account credits assistant (bilingual UI)
 // @author       apmengzi
 // @license      MIT
@@ -731,6 +731,8 @@
     const hit = findPoolByUid(jwtUid(acc.access));
     if (hit) {
       hit.access = acc.access;
+      hit.refresh = readCookie("chatglm_refresh_token") || hit.refresh;
+      hit.token_expires = readCookie("chatglm_token_expires") || hit.token_expires;
       hit.device_id = acc.device_id || hit.device_id;
       if (bal !== "?") hit.balance = bal;
       pool.upsert(hit);
