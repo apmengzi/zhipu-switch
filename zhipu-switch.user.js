@@ -3,7 +3,7 @@
 // @name:en      zhipu-switch - Zhipu Qingyan multi-account credits assistant
 // @description:en  Multi-account credits assistant for Zhipu Qingyan (chatglm.cn): balance panel, account pool, one-click account switching & adding, daily bonus check-in. Bilingual UI.
 // @namespace    zsw
-// @version      0.3.2
+// @version      0.3.3
 // @description  智谱清言双节活动多账号助手:余额悬浮窗(可收起圆图标)、多账号池、一键切换/添加账号、自动签到、中英双语 | Zhipu Qingyan multi-account credits assistant (bilingual UI)
 // @author       apmengzi
 // @license      MIT
@@ -321,13 +321,27 @@
       return p && typeof p === "object" ? p : null;
     } catch { return null; }
   }
+  function jwtUid(tok) { const p = parseJwtPayload(tok); return p ? (p.uid || p.sub || "") : ""; }
+  function jwtDeviceId(tok) { const p = parseJwtPayload(tok); return p ? (p.device_id || "") : ""; }
+  function jwtExp(tok) { const p = parseJwtPayload(tok); return p ? (p.exp || 0) : 0; }
   function onNewLoginToken(tok) {
     captured.token = tok;
     if (!tok || tok.split(".").length < 3) return; // 清 cookie 时的空值等垃圾写入
     if (onNewLoginToken._lastTok === tok) return;
     onNewLoginToken._lastTok = tok;
     const flag = (() => { try { return JSON.parse(localStorage.getItem(ADDING_KEY) || "null"); } catch { return null; } })();
-    if (!flag) return;
+    if (!flag) {
+      // 前台账号被站方自动续期/重登(非添加流程):按 uid 回写池,池内 token 常青
+      const hit = findPoolByUid(jwtUid(tok));
+      if (hit) {
+        hit.access = tok;
+        hit.refresh = readCookie("chatglm_refresh_token") || hit.refresh;
+        hit.token_expires = readCookie("chatglm_token_expires") || hit.token_expires;
+        hit.device_id = localStorage.getItem("chatglm-deid") || hit.device_id;
+        pool.upsert(hit);
+      }
+      return;
+    }
     if (Date.now() - flag.at > 10 * 60 * 1000) { localStorage.removeItem(ADDING_KEY); render(); return; }
     const jwt = parseJwtPayload(tok);
     if (jwt && jwt.is_guest) {
@@ -387,6 +401,51 @@
   const accInfo = (acc) => apiCall(acc.device_id, acc.access, "GET", "/user-api/user/info");
   const accCheckin = (acc) => apiCall(acc.device_id, acc.access, "POST", "/member-api/member/daily_login_score", {});
 
+  /* refresh 自愈链:池内账号 access(24h)过期时用其 refresh(约 50 天)续期并写回池。
+     设备指纹以 token JWT 绑定的为准(实测:账号文件字段可能不准);轮换时返回新 refresh 一并保存 */
+  async function tryRefreshAcc(acc) {
+    if (!acc.refresh) return false;
+    const did = jwtDeviceId(acc.access) || acc.device_id || "";
+    const h = signHeaders(did, "");
+    h["Content-Type"] = "application/json;charset=utf-8";
+    for (const auth of [acc.refresh, "Bearer " + acc.refresh]) {
+      try {
+        const r = await fetch("/chatglm/user-api/user/refresh", {
+          method: "POST", headers: Object.assign({}, h, { Authorization: auth }), body: "{}",
+        });
+        if (r.status !== 200) continue;
+        const j = await r.json();
+        const res = j.result || {};
+        const na = res.access_token || res.token;
+        if (na) {
+          acc.access = na;
+          acc.refresh = res.refresh_token || acc.refresh;
+          pool.upsert(acc);
+          return true;
+        }
+      } catch {}
+    }
+    return false;
+  }
+  /* 按 uid 找池内账号(前台自愈/回写用) */
+  function findPoolByUid(uid) {
+    if (!uid) return null;
+    return Object.values(pool.all()).find((a) => a.user_id === uid) || null;
+  }
+  /* 静默刷新某账号余额并回写池(签到成功/自愈后调用,修复"已领却显示旧余额") */
+  async function refreshBalFor(acc) {
+    let j = await accInfo(acc);
+    if (j.status === 401 && (await tryRefreshAcc(acc))) j = await accInfo(acc);
+    if (j.status === 0) {
+      const p = pool.all();
+      if (p[acc.name]) {
+        p[acc.name].balance = j.result.member_info?.left_score ?? p[acc.name].balance;
+        pool.save(p);
+        render();
+      }
+    }
+  }
+
   /* ---------- token 池（localStorage 明文，仅自用机器） ---------- */
   const pool = {
     all: () => { try { return JSON.parse(localStorage.getItem(POOL_KEY) || "{}"); } catch { return {}; } },
@@ -416,6 +475,7 @@
       poolName: "存入池的名称：",
       delConfirm: "从池中删除该账号？（仅删本地记录，不影响账号本身）",
       guestWarn: (s) => `当前登录态校验失败(${s})。\n继续将丢失当前登录（可稍后从池中切回）。继续？`,
+      renewing: (n) => `正在为「${n}」续期 token…`, refreshFail: "token过期(refresh失败)",
       langBtn: "EN",
     },
     en: {
@@ -437,6 +497,7 @@
       poolName: "Name for the pool:",
       delConfirm: "Remove this account from the pool? (local record only; the account itself is unaffected)",
       guestWarn: (s) => `Current login check failed (${s}).\nContinuing will lose the current login (you can switch back from the pool later). Continue?`,
+      renewing: (n) => `Renewing token for "${n}"…`, refreshFail: "token expired (refresh failed)",
       langBtn: "中",
     },
   };
@@ -566,10 +627,15 @@
     render();
   }
 
-  /* 切换账号：写回 cookie + 设备指纹 + 刷新（等效 Z-SWITCH） */
-  function switchTo(name) {
+  /* 切换账号：先给过期/临期 token 续期,再写回 cookie + 设备指纹 + 刷新(等效 Z-SWITCH) */
+  async function switchTo(name) {
     const acc = pool.all()[name];
     if (!acc) return;
+    const expMs = jwtExp(acc.access) * 1000;
+    if (!expMs || expMs - Date.now() < 10 * 60 * 1000) {
+      toast(t("renewing", name));
+      await tryRefreshAcc(acc);
+    }
     setCookie("chatglm_token", acc.access, 30);
     if (acc.refresh) setCookie("chatglm_refresh_token", acc.refresh, 180);
     if (acc.token_expires) setCookie("chatglm_token_expires", acc.token_expires, 30);
@@ -620,11 +686,12 @@
     toast(t("poolDownloaded"));
   }
 
-  async function checkinOne(acc) {
-    const j = await accCheckin(acc);
-    if (j.status === 0) { setResult(acc.name, "✅+" + ((j.result || {}).score ?? "?")); return true; }
-    if (j.status === 10001) { setResult(acc.name, "已领"); return true; }
-    if (j.status === 401) { setResult(acc.name, "token过期"); return false; }
+  async function checkinOne(acc, retried) {
+    let j = await accCheckin(acc);
+    if (j.status === 401 && !retried && (await tryRefreshAcc(acc))) return checkinOne(acc, true);
+    if (j.status === 0) { setResult(acc.name, "✅+" + ((j.result || {}).score ?? "?")); refreshBalFor(acc); return true; }
+    if (j.status === 10001) { setResult(acc.name, "已领"); refreshBalFor(acc); return true; }
+    if (j.status === 401) { setResult(acc.name, t("refreshFail")); return false; }
     if (j.status === 403) { setResult(acc.name, "⚠️403风控"); return false; }
     setResult(acc.name, "status" + j.status + ":" + (j.message || "").slice(0, 12));
     return false;
@@ -636,13 +703,14 @@
 
   async function refreshBalances() {
     for (const acc of Object.values(pool.all())) {
-      const j = await accInfo(acc);
+      let j = await accInfo(acc);
+      if (j.status === 401 && (await tryRefreshAcc(acc))) j = await accInfo(acc);
       const p = pool.all();
       if (j.status === 0) {
         p[acc.name].balance = j.result.member_info?.left_score;
         p[acc.name].last_result = "";
       } else if (p[acc.name]) {
-        p[acc.name].last_result = "HTTP" + j.status;
+        p[acc.name].last_result = j.status === 401 ? t("refreshFail") : "HTTP" + j.status;
       }
       pool.save(p);
     }
@@ -659,6 +727,14 @@
     const bal = info && info.status === 0 ? (info.result.member_info?.left_score ?? "?") : "?";
     const st = j.status === 0 ? t("gotToday") : j.status === 10001 ? t("already") : j.status === 401 ? t("noLogin") : "status " + j.status;
     main.innerHTML = t("curBal", bal, st);
+    // 回写池:前台号的最新 access/deid/余额同步进池(池内余额不再陈旧)
+    const hit = findPoolByUid(jwtUid(acc.access));
+    if (hit) {
+      hit.access = acc.access;
+      hit.device_id = acc.device_id || hit.device_id;
+      if (bal !== "?") hit.balance = bal;
+      pool.upsert(hit);
+    }
   }
 
   /* ---------- 启动 ---------- */
@@ -683,5 +759,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else setTimeout(boot, 0);
 
-  window.__zsw = { pool, signHeaders, hex_md5, captured, apiCall, switchTo, readCookie };
+  window.__zsw = { pool, signHeaders, hex_md5, captured, apiCall, switchTo, readCookie, tryRefreshAcc };
 })();
